@@ -1,0 +1,15 @@
+#mynetwork {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    margin: -10px;
+    background-color: #ddd;
+  }
+  #routeBox {
+    background-color: #fff;
+    padding: 2vh 2vw;
+    border-radius: 5px;
+    position: fixed;
+    top: 5vh;
+    left: 5vw;
+  }
