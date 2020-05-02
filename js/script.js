@@ -1,3 +1,4 @@
+// create constant with given json data
 const json = {
     pysakit: [
       'A',
@@ -152,7 +153,7 @@ const json = {
       }
     ],
     linjastot: {
-      yellow: [
+      keltainen: [
         'E',
         'F',
         'G',
@@ -161,7 +162,7 @@ const json = {
         'M',
         'N'
       ],
-      red: [
+      punainen: [
         'C',
         'D',
         'R',
@@ -170,7 +171,7 @@ const json = {
         'O',
         'P'
       ],
-      green: [
+      vihreä: [
         'D',
         'B',
         'A',
@@ -182,7 +183,7 @@ const json = {
         'I',
         'J'
       ],
-      blue: [
+      sininen: [
         'D',
         'E',
         'M',
@@ -192,23 +193,23 @@ const json = {
     }
   }
 
-
+// save input element
 var inputsClone = $('#inputs').clone();
+
+// save route element
 var bestRouteClone = $('#best-route').clone();
 
-// Create array from json for vis.js to draw stops from
+// create array from json for vis.js to draw stops from
 const stops = [];
 json.pysakit.forEach(stop => {
   stops.push({id: stop, label: '<b>' + stop + '</b>'});
 });
 
-// Create array from json for vis.js to draw roads from
+// create array from json for vis.js to draw roads from
 const roads = [];
 json.tiet.forEach((road,i) => {
   roads.push({id: i, from: road.mista, to: road.mihin, length: road.kesto})
 })
-
-//console.log(json.linjastot);
 
 // create an array with nodes from bus stops array
 const nodes = new vis.DataSet(stops);
@@ -219,11 +220,13 @@ const edges = new vis.DataSet(roads);
 // create a network
 const container = document.getElementById('road-map');
 
+// add nodes and edges
 const data = {
     nodes: nodes,
     edges: edges
 };
 
+// configure the map
 const options = {
     interaction:{
         dragNodes: false,
@@ -260,31 +263,65 @@ const options = {
     }
 };
 
+// create the network map with vis.js
 const network = new vis.Network(container, data, options);
 
+// crete variable that tells which input is being filled in
 var inputToggle = true;
 
+// create variable that tells if calculation is already done
+var calculated = false;
+
+// define what happens when network map is clicked
 network.on('click', function(properties) {
+  // check if calculation has been already done and break
+  if (calculated) {
+    return;
+  }
+
+  // get ids of clicked node
   let ids = properties.nodes;
   let clickedNodes = nodes.get(ids);
+
+  // check that node has been clicked and not something else
   if (clickedNodes.length != 0) {    
+
+    // if input toggle is default manipulate from field
     if (inputToggle) {
+      
+      // mark node on the map as selected and unselect earlier selection
       selectNode(clickedNodes[0].id, $('#from').val());
+      
+      // populate from input field with selection
       $('#from').val(clickedNodes[0].id);
+
+      // move input field focus on to-field
       $('#to').focus();
+
+      // change toggle to other input field
       inputToggle = false;
     } else {
+      
+      // mark node on the map as selected and unselect earlier selection
       selectNode(clickedNodes[0].id, $('#to').val());
+
+      // populate to input field with selection
       $('#to').val(clickedNodes[0].id);
+
+      // move input field focus on frm-field
       $('#from').focus();
+
+      // change toggle to other input field
       inputToggle = true;
     }
+    // check if both fields are populated and enable calculate button
     if ( $('#from').val() != "" && $('#to').val() != "" ) {
       $('#calculate').prop('disabled', false);
     }
   };
 });
 
+// a function that deselects earlier node from network map and select new one
 function selectNode(current, old) {
     nodes.update({
       id: current,
@@ -305,39 +342,67 @@ function selectNode(current, old) {
     }
 };
 
+// record click event on route calculation button
 $(document).on('click', '#calculate', function() {
+
+  // put all possible routes to a variable
   var routes = findRoutes($('#from').val(), $('#to').val());
+
+  // calculate routes' lengths and sort them from shortest to longest
   var shortestRoutes = calculateShortestRoute( routes );
+
+  // mark roads with line color
   var intervalLines = markEdges(shortestRoutes[0].route);
+
+  // input route into a table in route element
   $('#route').append($('#from').val() + ' - ' +  $('#to').val());
   intervalLines.forEach(interval => {
-    $('#route-table > tbody:last-child').append('<tr><td>' + translateColor(interval.line) + '</td><td>' + interval.from + ' - ' + interval.to + '</td></tr>');
+    $('#route-table > tbody:last-child').append('<tr><td>' + interval.line.capitalize() + '</td><td>' + interval.from + ' - ' + interval.to + '</td></tr>');
   });
+
+  // add route length in route element
   $('#length').append(shortestRoutes[0].length);
+
+  // show route element
   $('#best-route').show();
+
+  // hide calculation button
   $('#calculate').hide();
+
+  // show reset button
   $('#reset').show();
+
+  // change toggle value to tell the route has been calculated
+  calculated = true;
 });
 
+// function to capitalize first letter
+String.prototype.capitalize = function() {
+  return this.charAt(0).toUpperCase() + this.slice(1)
+}
+
+// function to translate line colors from json
 function translateColor(color) {
   switch(color) {
-    case 'yellow':
-      return 'Keltainen';
+    case 'keltainen':
+      return 'yellow';
       break;
-    case 'red':
-      return 'Punainen';
+    case 'punainen':
+      return 'red';
       break;
-    case 'green':
-      return 'Vihreä';
+    case 'vihreä':
+      return 'green';
       break;
-    case 'blue':
-      return 'Sininen';
+    case 'sininen':
+      return 'blue';
       break;
   }
 };
 
+// run reset function when button is clicked
 $(document).on('click', '#reset', reset );
 
+// function to reset network map and DOM elements to beginning state
 function reset() {
   stops.forEach(stop => {
     nodes.update({
@@ -357,8 +422,68 @@ function reset() {
   });
   $('#best-route').replaceWith(bestRouteClone.clone());
   $('#inputs').replaceWith(inputsClone.clone());
+  calculated = false;
 }
 
+// function to find all possible routes
+function findRoutes(start, end) {
+  var routes = [[start]];    
+  var fullRoutes = [];
+
+  json.tiet.forEach(road => {
+    updatedRoutes = [];
+    routes.forEach(route => {
+      updatedRoutes = updatedRoutes.concat( newRoutes(route) );
+    });
+    routes = Array.from(new Set(updatedRoutes.map(JSON.stringify)), JSON.parse);
+    routes.forEach((element) => {
+        if (element[element.length -1] === end) {
+            fullRoutes.push(element);
+        }
+    })
+  });
+
+  
+  function newRoutes(route) {
+      var lastStop = route[route.length - 1];
+      var nextStops = nextStops(lastStop);
+      var newRoutes = [];
+      nextStops.forEach(stop => {
+        if (route.indexOf(stop) == -1) {
+          newRoutes.push( route.concat( [ stop ] ) );
+        }
+      });
+
+      function nextStops(from) {
+          var nextStops = [];
+      
+          // Check for all lines
+          var lines = Object.keys(json.linjastot);
+          lines.forEach(line => {
+            var stop = json.linjastot[line].indexOf(from);
+            if (stop != -1) {
+                var stopBefore = json.linjastot[line][stop - 1];
+                var stopAfter = json.linjastot[line][stop + 1];
+    
+                if (typeof stopBefore != 'undefined') {
+                    nextStops.push(stopBefore);
+                }
+    
+                if (typeof stopAfter != 'undefined') {
+                    nextStops.push(stopAfter);
+                }
+
+            };
+          });
+          return nextStops;
+      }
+      return newRoutes;
+  }
+  return fullRoutes;
+
+}
+
+// function that calculates route lengths and returns routes sorted from shortest to longest
 function calculateShortestRoute(routes) {
     var routeLengths = [];
     routes.forEach(route => {
@@ -379,68 +504,7 @@ function calculateShortestRoute(routes) {
     return routeLengths;
 }
 
-function findRoutes(start, end) {
-    var routes = [[start]];    
-    var fullRoutes = [];
-
-    for (let i = 0; i < json.tiet.length; i++) {
-        updatedRoutes = [];
-        for (let j = 0; j < routes.length; j++ ) {
-            updatedRoutes = updatedRoutes.concat( newRoutes(routes[j]) );
-        }
-        routes = Array.from(new Set(updatedRoutes.map(JSON.stringify)), JSON.parse);
-        routes.forEach((element) => {
-            if (element[element.length -1] === end) {
-                fullRoutes.push(element);
-            }
-        })
-    }
-    
-    function newRoutes(route) {
-        var lastStop = route[route.length - 1];
-        var nextStops = nextStops(lastStop);
-        var newRoutes = [];
-        for (let i = 0; i < nextStops.length; i++) {
-            if (route.indexOf(nextStops[i]) == -1) {
-                newRoutes.push( route.concat( [ nextStops[i] ] ) );
-            }
-        }
-
-        function nextStops(from) {
-            var nextStops = [];
-        
-            // Check for all lines
-            var lines = Object.keys(json.linjastot);
-            for (let i = 0; i < lines.length; i++) {
-        
-                var stop = json.linjastot[lines[i]].indexOf(from);
-                if (stop != -1) {
-        
-                    var stopBefore = json.linjastot[lines[i]][stop - 1];
-                    var stopAfter = json.linjastot[lines[i]][stop + 1];
-        
-                    if (typeof stopBefore != 'undefined') {
-                        nextStops.push(stopBefore);
-                    }
-        
-                    if (typeof stopAfter != 'undefined') {
-                        nextStops.push(stopAfter);
-                    }
-        
-                };
-            }
-        
-            return nextStops;
-            
-        }
-
-        return newRoutes;
-    }
-    
-    return fullRoutes;
-
-}
-
+// function that returns line color for each interval between stops
 function getLines(stops) {
   let lines = Object.keys(json.linjastot);
   var interval;
@@ -459,21 +523,19 @@ function getLines(stops) {
   return interval;
 }
 
-
+// function to mark route edges with correct bus line color on the network map
 function markEdges(route) {
-  console.log(route);
   routeLines = []
   for (let i = 1; i < route.length; i++ ){
     routeLines.push( getLines([route[i-1], route[i]]) );
   }
-  console.log(routeLines);
   routeLines.forEach(interval => {
     roads.forEach(road => {
       if ( (interval.from === road.from && interval.to === road.to) || (interval.from === road.to && interval.to === road.from) ) {
         edges.update({
           id: road.id,
           color: {
-              color: interval.line
+              color: translateColor(interval.line)
           }
         });
       }
