@@ -8,22 +8,58 @@
     <meta name="description" content="">
     <meta name="author" content="">
   <title>Reittiopas</title>
+  <!-- Bootstrap and site specific CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="style/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Scripts reuired for Bootstrap -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  <!-- Vis.js scripts -->
   <script type="text/javascript" src="js/vis-network.min.js"></script>
   <script type="text/javascript" src="js/vis-data.min.js"></script>
 
 
 </head>
 <body>
-<div id="mynetwork"></div>
-<div id="routeBox">
-  <span id="message">Valitse lähtöpaikka</span>
-  <br />
-  <input id="from" placeholder="Valitse lähtöpaikka" readonly>
-  <br />
-  <input id="to" placeholder="Valitse määränpää" readonly>
-</div>
+  
+  <div id="inputs" class="box">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <span class="input-group-text">Mistä:</span>
+        </div>
+        <input id="from" placeholder="Valitse lähtöpysäkki kartalta" type="text" class="form-control" autofocus readonly>
+      </div>
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <span class="input-group-text">Mihin:</span>
+        </div>
+        <input id="to" placeholder="Valitse määränpääpysäkki" type="text" class="form-control" readonly>
+      </div>
+      
+      <button type="button" class="btn btn-primary btn-block" disabled id="calculate">Laske reitti</button>
+      <button type="button" class="btn btn-secondary btn-block" id="reset">Laske uusi reitti</button>
+  </div>
+
+  <div id="road-map"></div>
+
+  <div id="best-route" class="box">
+    <b id="route">Paras reitti </b>
+    <table class="table" id="route-table">
+      <thead>
+        <tr>
+          <th>Linja</th>
+          <th>Pysäkit</th>
+        </tr>
+      </thead>
+      <tbody>
+
+      </tbody>
+    </table>
+    <b id="length">Yhteiskesto: </b>
+  </div>
 <script src="js/script.js"></script>
 </body>
 </html>

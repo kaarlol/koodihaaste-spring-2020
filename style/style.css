@@ -1,15 +1,87 @@
-#mynetwork {
-    position: absolute;
-    width: 100vw;
-    height: 100vh;
-    margin: -10px;
-    background-color: #ddd;
+body {
+  font-family: Poppins !important;
+}
+
+.box {
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 1vw;
+  position: fixed;
+  z-index: 2;
+}
+
+#inputs {
+  top: 2vw;
+  left: 2vw;
+}
+
+#best-route {
+  top: 2vw;
+  right: 2vw;
+  padding: 2vw;
+  display: none;
+}
+
+input {
+  margin-bottom: 0.5vw;
+}
+
+.input-group {
+  margin-bottom: 0.8vh;
+}
+
+.btn:disabled {
+  opacity: .3;
+}
+
+#reset {
+  display: none;
+}
+
+#road-map {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  margin: -10px;
+  background-color: #ddd;
+  font-weight: 700;
+}
+
+.btn-block+.btn-block {
+  margin-top: 0;
+}
+
+.table td, .table th {
+  padding: .3rem;
+}
+
+.table {
+  margin: .5rem 0;
+}
+@media screen and (max-width: 767px) {
+  #inputs {
+    top: 0;
+    left: 0;
+    position:relative;
+    height: 17vh
+    border-radius: 0px;
   }
-  #routeBox {
-    background-color: #fff;
-    padding: 2vh 2vw;
-    border-radius: 5px;
-    position: fixed;
-    top: 5vh;
-    left: 5vw;
+  
+  #best-route {
+    top: 17.5vh;
+    font-size: 0.7rem;
+   }
+
+  .form-control, .input-group-text, .btn {
+    font-size: 0.7rem;
   }
+
+  #road-map {
+   position: relative;
+   width: 100vw;
+   height: 83vh;
+   background-color: #ddd;
+   margin:0;
+   }
+
+ }

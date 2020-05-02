@@ -1,4 +1,4 @@
-json = {
+const json = {
     pysakit: [
       'A',
       'B',
@@ -193,35 +193,38 @@ json = {
   }
 
 
-pysakit = [];
-for (let i = 0; i < json.pysakit.length; i++) {
-    pysakit.push({id: json.pysakit[i], label: json.pysakit[i]});
-} 
+var inputsClone = $('#inputs').clone();
+var bestRouteClone = $('#best-route').clone();
 
-tiet = [];
-for (let i = 0; i < json.tiet.length; i++) {
-    tiet.push({id: i, from: json.tiet[i].mista, to: json.tiet[i].mihin, length: json.tiet[i].kesto})
-}
+// Create array from json for vis.js to draw stops from
+const stops = [];
+json.pysakit.forEach(stop => {
+  stops.push({id: stop, label: '<b>' + stop + '</b>'});
+});
 
-//console.log(pysakit);
-//console.log(tiet);
+// Create array from json for vis.js to draw roads from
+const roads = [];
+json.tiet.forEach((road,i) => {
+  roads.push({id: i, from: road.mista, to: road.mihin, length: road.kesto})
+})
+
 //console.log(json.linjastot);
 
-// create an array with nodes
-var nodes = new vis.DataSet(pysakit);
+// create an array with nodes from bus stops array
+const nodes = new vis.DataSet(stops);
 
-// create an array with edges
-var edges = new vis.DataSet(tiet);
+// create an array with edges from roads array
+const edges = new vis.DataSet(roads);
 
 // create a network
-var container = document.getElementById('mynetwork');
+const container = document.getElementById('road-map');
 
-var data = {
+const data = {
     nodes: nodes,
     edges: edges
 };
 
-var options = {
+const options = {
     interaction:{
         dragNodes: false,
         dragView: false,
@@ -243,47 +246,118 @@ var options = {
         left: 10
       },
       color: {
-        background: '#007bff'
+        background: '#007bff',
+        hover: {
+          background: '#00baff'
+        }
       },
       font: {
-        color: '#fff'
-      }
+        color: '#fff',
+        face: 'Poppins',
+        multi: 'html'
+      },
+      chosen: false
     }
 };
 
-var network = new vis.Network(container, data, options);
-var state = "from";
-var destinations = {
-    from: "",
-    to: ""
-}
+const network = new vis.Network(container, data, options);
+
+var inputToggle = true;
 
 network.on('click', function(properties) {
-    var ids = properties.nodes;
-    var clickedNodes = nodes.get(ids);
-    //console.log('clicked nodes:', clickedNodes);
-    if (clickedNodes.length != 0) {
-        switch (state) {
-            case "from":
-                $('#from').val(clickedNodes[0].id);
-                destinations.from = clickedNodes[0].id;
-                state = "to";
-                $('#message').html('Valitse määränpää');
-                break;
-            case "to":
-                $('#to').val(clickedNodes[0].id);
-                destinations.to = clickedNodes[0].id;
-                state = "from";
-                network.selectNodes([destinations.from, destinations.to], false);
-                break;
-        }
+  let ids = properties.nodes;
+  let clickedNodes = nodes.get(ids);
+  if (clickedNodes.length != 0) {    
+    if (inputToggle) {
+      selectNode(clickedNodes[0].id, $('#from').val());
+      $('#from').val(clickedNodes[0].id);
+      $('#to').focus();
+      inputToggle = false;
+    } else {
+      selectNode(clickedNodes[0].id, $('#to').val());
+      $('#to').val(clickedNodes[0].id);
+      $('#from').focus();
+      inputToggle = true;
     }
-    
+    if ( $('#from').val() != "" && $('#to').val() != "" ) {
+      $('#calculate').prop('disabled', false);
+    }
+  };
 });
 
+function selectNode(current, old) {
+    nodes.update({
+      id: current,
+      borderWidth: 3,
+      color: {
+        background: '#00baff',
+        border: '#fff'
+      }
+    });
+    if (old.length > 0) {
+      nodes.update({
+        id: old,
+        borderWidth: 0,
+        color: {
+          background: '#007bff'
+        }
+      });
+    }
+};
 
-var routes = findRoutes(destinations.from, destinations.to);
-var shortestRoutes = calculateShortestRoute( routes );
+$(document).on('click', '#calculate', function() {
+  var routes = findRoutes($('#from').val(), $('#to').val());
+  var shortestRoutes = calculateShortestRoute( routes );
+  var intervalLines = markEdges(shortestRoutes[0].route);
+  $('#route').append($('#from').val() + ' - ' +  $('#to').val());
+  intervalLines.forEach(interval => {
+    $('#route-table > tbody:last-child').append('<tr><td>' + translateColor(interval.line) + '</td><td>' + interval.from + ' - ' + interval.to + '</td></tr>');
+  });
+  $('#length').append(shortestRoutes[0].length);
+  $('#best-route').show();
+  $('#calculate').hide();
+  $('#reset').show();
+});
+
+function translateColor(color) {
+  switch(color) {
+    case 'yellow':
+      return 'Keltainen';
+      break;
+    case 'red':
+      return 'Punainen';
+      break;
+    case 'green':
+      return 'Vihreä';
+      break;
+    case 'blue':
+      return 'Sininen';
+      break;
+  }
+};
+
+$(document).on('click', '#reset', reset );
+
+function reset() {
+  stops.forEach(stop => {
+    nodes.update({
+      id: stop.id,
+      borderWidth: 0,
+      color: {
+        background: '#007bff'
+      }
+    });
+  })
+  roads.forEach(road => {
+    edges.update({
+      id: road.id,
+      color: '#fff',
+      width: 5
+    });
+  });
+  $('#best-route').replaceWith(bestRouteClone.clone());
+  $('#inputs').replaceWith(inputsClone.clone());
+}
 
 function calculateShortestRoute(routes) {
     var routeLengths = [];
@@ -367,28 +441,43 @@ function findRoutes(start, end) {
 
 }
 
-
-/* Mark edges
-for (j = 0; j < tiet.length; j++) {
-    // Check earlier stop
-    if ((tiet[j].from == from && tiet[j].to == stopBefore) || (tiet[j].from == stopBefore && tiet[j].to == from)) {
-        
-        edges.update({
-            id: tiet[j].id,
-            color: {
-                color: lines[i]
+function getLines(stops) {
+  let lines = Object.keys(json.linjastot);
+  var interval;
+  lines.forEach(line => {
+    for (let i = 1; i < json.linjastot[line].length; i++) {
+      if ((stops[0] === json.linjastot[line][i-1] && stops[1] === json.linjastot[line][i]) ||  
+          (stops[1] === json.linjastot[line][i-1] && stops[0] === json.linjastot[line][i])) {
+            interval = {
+              from: stops[0],
+              to: stops[1],
+              line: line
             }
-        });
-    }
-
-    // Check next stop
-    if ((tiet[j].from == from && tiet[j].to == stopAfter) || (tiet[j].from == stopAfter && tiet[j].to == from)) {
-        edges.update({
-            id: tiet[j].id,
-            color: {
-                color: lines[i]
-            }
-        });
-    }
+          }
+    };
+  });
+  return interval;
 }
-*/
+
+
+function markEdges(route) {
+  console.log(route);
+  routeLines = []
+  for (let i = 1; i < route.length; i++ ){
+    routeLines.push( getLines([route[i-1], route[i]]) );
+  }
+  console.log(routeLines);
+  routeLines.forEach(interval => {
+    roads.forEach(road => {
+      if ( (interval.from === road.from && interval.to === road.to) || (interval.from === road.to && interval.to === road.from) ) {
+        edges.update({
+          id: road.id,
+          color: {
+              color: interval.line
+          }
+        });
+      }
+    });
+  });
+  return routeLines;
+}
