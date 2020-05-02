@@ -42,7 +42,6 @@ input {
   position: absolute;
   width: 100vw;
   height: 100vh;
-  margin: -10px;
   background-color: #ddd;
   font-weight: 700;
 }
@@ -63,7 +62,7 @@ input {
     top: 0;
     left: 0;
     position:relative;
-    height: 17vh
+    height: 17vh;
     border-radius: 0px;
   }
   
